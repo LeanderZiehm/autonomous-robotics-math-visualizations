@@ -1,196 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <script src="https://self-hosted-analytics.vercel.app/track.js"></script>
-
-  <title>Cartesian to Polar Visualization with Guide Lines</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      text-align: center;
-    }
-    .container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-    }
-    .canvas-container {
-      border: 1px solid #ccc;
-      position: relative;
-    }
-    canvas {
-      background-color: #f9f9f9;
-    }
-    .info {
-      margin-top: 10px;
-      font-size: 1rem;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Coordinate Visualizer</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Interactive Cartesian to Polar Visualization</h1>
-  <p>Click on the left (Cartesian) canvas to see the corresponding polar coordinates on the right.<br>
-     The Cartesian view shows a two-step guide (first horizontal then vertical) from the origin, while the Polar view shows a direct line and the angle as a circular sector.
-  </p>
-  <div class="container">
-    <div class="canvas-container">
-      <canvas id="cartesianCanvas" width="400" height="400"></canvas>
-      <div class="info" id="cartesianInfo">Cartesian: (x, y)</div>
+    <div class="container">
+        <!-- Cartesian Scene -->
+        <div class="scene-container">
+            <h2>Cartesian (x, y, z)</h2>
+            <div id="cartesian-canvas-container">
+                <!-- Canvas will be inserted here by Three.js -->
+            </div>
+            <div id="cartesian-coords" class="coords-display">
+                x: 0.000<br>
+                y: 0.000<br>
+                z: 0.000
+            </div>
+        </div>
+
+        <!-- Spherical Scene -->
+        <div class="scene-container">
+            <h2>Spherical (r, &theta;, &phi;)</h2>
+            <div id="spherical-canvas-container">
+                <!-- Canvas will be inserted here by Three.js -->
+            </div>
+            <div id="spherical-coords" class="coords-display">
+                r: 0.000<br>
+                &theta;: 0.00 rad (0.0&deg;)<br>
+                &phi;: 0.00 rad (0.0&deg;)
+            </div>
+        </div>
     </div>
-    <div class="canvas-container">
-      <canvas id="polarCanvas" width="400" height="400"></canvas>
-      <div class="info" id="polarInfo">Polar: (r, θ)</div>
-    </div>
-  </div>
-  <script>
-    // Helper functions for angle conversions
-    function degToRad(deg) {
-      return deg * Math.PI / 180;
-    }
-    function radToDeg(rad) {
-      return rad * 180 / Math.PI;
-    }
-    // Get canvases and their contexts
-    const cartCanvas = document.getElementById('cartesianCanvas');
-    const polarCanvas = document.getElementById('polarCanvas');
-    const cartCtx = cartCanvas.getContext('2d');
-    const polarCtx = polarCanvas.getContext('2d');
-    const cartInfo = document.getElementById('cartesianInfo');
-    const polarInfo = document.getElementById('polarInfo');
-    const canvasSize = 400;
-    const halfSize = canvasSize / 2;
-    // Draw the Cartesian grid with axes
-    function drawCartesianGrid() {
-      cartCtx.clearRect(0, 0, canvasSize, canvasSize);
-      cartCtx.strokeStyle = '#e0e0e0';
-      for (let i = 0; i <= canvasSize; i += 20) {
-        cartCtx.beginPath();
-        cartCtx.moveTo(i, 0);
-        cartCtx.lineTo(i, canvasSize);
-        cartCtx.stroke();
-        cartCtx.beginPath();
-        cartCtx.moveTo(0, i);
-        cartCtx.lineTo(canvasSize, i);
-        cartCtx.stroke();
-      }
-      // Main axes
-      cartCtx.strokeStyle = '#000';
-      cartCtx.beginPath();
-      cartCtx.moveTo(halfSize, 0);
-      cartCtx.lineTo(halfSize, canvasSize);
-      cartCtx.stroke();
-      cartCtx.beginPath();
-      cartCtx.moveTo(0, halfSize);
-      cartCtx.lineTo(canvasSize, halfSize);
-      cartCtx.stroke();
-    }
-    // Draw the polar grid with circles and radial lines
-    function drawPolarGrid() {
-      polarCtx.clearRect(0, 0, canvasSize, canvasSize);
-      polarCtx.strokeStyle = '#e0e0e0';
-      const maxRadius = halfSize;
-      for (let r = 20; r <= maxRadius; r += 20) {
-        polarCtx.beginPath();
-        polarCtx.arc(halfSize, halfSize, r, 0, Math.PI * 2);
-        polarCtx.stroke();
-      }
-      for (let angle = 0; angle < 360; angle += 30) {
-        let rad = degToRad(angle);
-        polarCtx.beginPath();
-        polarCtx.moveTo(halfSize, halfSize);
-        polarCtx.lineTo(halfSize + maxRadius * Math.cos(rad), halfSize + maxRadius * Math.sin(rad));
-        polarCtx.stroke();
-      }
-    }
-    // Draw a point on a canvas context
-    function drawPoint(ctx, x, y, color = 'red') {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Update both canvases based on the clicked position
-    function updateVisualization(cartX, cartY) {
-      // Convert clicked canvas coordinates to mathematical Cartesian coordinates (origin at center)
-      let x = cartX - halfSize;
-      let y = halfSize - cartY; // invert y
-      // Compute polar coordinates
-      let r = Math.sqrt(x * x + y * y);
-      let theta = Math.atan2(y, x);
-      if (theta < 0) {
-        theta += 2 * Math.PI;
-      }
-      // Update displayed coordinate values
-      cartInfo.textContent = `Cartesian: (${x.toFixed(2)}, ${y.toFixed(2)})`;
-      polarInfo.textContent = `Polar: (r = ${r.toFixed(2)}, θ = ${radToDeg(theta).toFixed(2)}°)`;
-      // Redraw grids
-      drawCartesianGrid();
-      drawPolarGrid();
-      // --- Cartesian View ---
-      // Draw guide lines from origin: first horizontal then vertical
-      cartCtx.strokeStyle = 'red';
-      cartCtx.lineWidth = 2;
-      // Horizontal line: from origin to the x position at y = origin
-      cartCtx.beginPath();
-      cartCtx.moveTo(halfSize, halfSize);
-      cartCtx.lineTo(cartX, halfSize);
-      cartCtx.stroke();
 
+    <!-- Import maps for Three.js modules -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
+            }
+        }
+    </script>
 
-      // Vertical line: from (cartX, halfSize) to the actual clicked point
-      cartCtx.beginPath();
-         cartCtx.strokeStyle = 'blue';
-      cartCtx.moveTo(cartX, halfSize);
-      cartCtx.lineTo(cartX, cartY);
-      cartCtx.stroke();
-      // Mark the point on the Cartesian canvas
-      drawPoint(cartCtx, cartX, cartY, 'black');
-      // --- Polar View ---
-      // Calculate the canvas coordinates for the polar point
-      let polarX = halfSize + r * Math.cos(theta);
-      let polarY = halfSize + r * Math.sin(theta);
-      // Draw direct line from origin to the polar point
-      polarCtx.strokeStyle = 'green';
-      polarCtx.lineWidth = 2;
-      polarCtx.beginPath();
-      polarCtx.moveTo(halfSize, halfSize);
-      polarCtx.lineTo(polarX, polarY);
-      polarCtx.stroke();
-      // Draw a circular sector to visualize the angle (from the positive x-axis to the point)
-      polarCtx.fillStyle = 'rgba(0, 0, 255, 0.2)';
-      polarCtx.beginPath();
-      polarCtx.moveTo(halfSize, halfSize);
-      // Use a radius that fits in the polar grid (you can choose r or a smaller value)
-      let sectorRadius = Math.min(r, halfSize);
-      polarCtx.arc(halfSize, halfSize, sectorRadius, 0, theta, false);
-      polarCtx.closePath();
-      polarCtx.fill();
-      // Mark the point on the Polar canvas
-      drawPoint(polarCtx, polarX, polarY, 'black');
-    }
-    // Initial grid drawing
-    drawCartesianGrid();
-    drawPolarGrid();
-    // Add click listener to the Cartesian canvas
-    // cartCanvas.addEventListener('click', function(event) {
-    //   const rect = cartCanvas.getBoundingClientRect();
-    //   const clickX = event.clientX - rect.left;
-    //   const clickY = event.clientY - rect.top;
-    //   updateVisualization(clickX, clickY);
-    // });
-    cartCanvas.addEventListener('mousemove', function(event) {
-  const rect = cartCanvas.getBoundingClientRect();
-  const mouseX = event.clientX - rect.left;
-  const mouseY = event.clientY - rect.top;
-  updateVisualization(mouseX, mouseY);
-});
-
-  </script>
+    <!-- Main script -->
+    <script type="module" src="script.js"></script>
 </body>
 </html>
